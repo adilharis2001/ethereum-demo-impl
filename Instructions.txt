@@ -1,0 +1,150 @@
+Deploying a sample contract on Ethereum test net
+
+1. Launch test net
+
+geth --testnet --fast --cache=512 --rpc --rpccorsdomain --rpcapi "*" console
+
+Alternative: geth --testnet --fast --cache=512 --rpc --rpccorsdomain --rpcaddr "0.0.0.0" --rpcapi "*" console
+
+2. Create Account
+
+personal.newAccount()
+Set password as 'pass'
+
+3. Unlock the account for fund transfer
+
+personal.unlockAccount('...') // Check the eth.accounts array and set the new account created above
+
+3. Set as coinbase account so mined ether will get credited to it
+
+miner.setEtherbase('...') // Check the eth.accounts array and set the new account created above
+
+4. Check updated coinbase account points to new account
+
+eth.coinbase
+
+5. Start mining with 2 threads
+
+miner.start(2)
+
+6. After 5 minutes, check new balance of coinbase account
+
+eth.getBalance(eth.coinbase)
+
+If it shows balance > 0, mining is working and test ether is being credited
+
+7. After getting sufficient test ether, stop mining
+
+miner.stop()
+
+8. Write a smart contract or use the sample provided below
+
+Contract:
+
+pragma solidity ^0.4.0;
+contract ApolloTrade {
+    uint public kWh_rate = 1000;
+    mapping (address => uint) energyAccount;
+    mapping (address => uint) coinAccount;
+    address public owner;
+
+    function ApolloTrade() {
+        owner = msg.sender;
+    }
+
+
+    function setRate(uint rate)  {
+        kWh_rate = rate;
+    }
+
+    // I am selling some energy; this will credit my account
+    function sellEnergy(uint kwh) public {
+        coinAccount[msg.sender] += (kwh * kWh_rate);
+    }
+
+    // I am buying some energy, thus crediting my energy account
+    function buyEnergy(uint coin) {
+        if (coinAccount[msg.sender] > coin) {
+            coinAccount[msg.sender] -= coin;
+            energyAccount[msg.sender] += (coin / kWh_rate);
+        }
+    }
+
+    function getEnergyAccount() returns (uint kwh) {
+        return energyAccount[msg.sender];
+    }
+
+    function getCoinAccount() returns (uint coin) {
+        return coinAccount[msg.sender];
+    }
+}
+
+Web3 deploy:
+
+var ballot_sol_apollotradeContract = web3.eth.contract([{"constant":false,"inputs":[{"name":"rate","type":"uint256"}],"name":"setRate","outputs":[],"payable":false,"type":"function"},{"constant":true,"inputs":[],"name":"kWh_rate","outputs":[{"name":"","type":"uint256"}],"payable":false,"type":"function"},{"constant":false,"inputs":[{"name":"kwh","type":"uint256"}],"name":"sellEnergy","outputs":[],"payable":false,"type":"function"},{"constant":false,"inputs":[],"name":"getEnergyAccount","outputs":[{"name":"kwh","type":"uint256"}],"payable":false,"type":"function"},{"constant":false,"inputs":[],"name":"getCoinAccount","outputs":[{"name":"coin","type":"uint256"}],"payable":false,"type":"function"},{"constant":true,"inputs":[],"name":"owner","outputs":[{"name":"","type":"address"}],"payable":false,"type":"function"},{"constant":false,"inputs":[{"name":"coin","type":"uint256"}],"name":"buyEnergy","outputs":[],"payable":false,"type":"function"},{"inputs":[],"payable":false,"type":"constructor"}]);
+var ballot_sol_apollotrade = ballot_sol_apollotradeContract.new(
+   {
+     from: web3.eth.coinbase, 
+     data: '0x60606040526103e8600055341561001257fe5b5b33600360006101000a81548173ffffffffffffffffffffffffffffffffffffffff021916908373ffffffffffffffffffffffffffffffffffffffff1602179055505b5b610440806100656000396000f30060606040523615610081576000357c0100000000000000000000000000000000000000000000000000000000900463ffffffff16806334fcf4371461008357806338bc0053146100a35780634326ee36146100c95780634615f12c146100e95780635d17f66b1461010f5780638da5cb5b14610135578063bc8a251f14610187575bfe5b341561008b57fe5b6100a160048080359060200190919050506101a7565b005b34156100ab57fe5b6100b3610210565b6040518082815260200191505060405180910390f35b34156100d157fe5b6100e76004808035906020019091905050610216565b005b34156100f157fe5b6100f961026b565b6040518082815260200191505060405180910390f35b341561011757fe5b61011f6102b3565b6040518082815260200191505060405180910390f35b341561013d57fe5b6101456102fb565b604051808273ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200191505060405180910390f35b341561018f57fe5b6101a56004808035906020019091905050610321565b005b600360009054906101000a900473ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff163373ffffffffffffffffffffffffffffffffffffffff161415156102045760006000fd5b806000819055505b5b50565b60005481565b6000548102600260003373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff168152602001908152602001600020600082825401925050819055505b50565b6000600160003373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff1681526020019081526020016000205490505b90565b6000600260003373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff1681526020019081526020016000205490505b90565b600360009054906101000a900473ffffffffffffffffffffffffffffffffffffffff1681565b80600260003373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff1681526020019081526020016000205411156104105780600260003373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff16815260200190815260200160002060008282540392505081905550600054818115156103c257fe5b04600160003373ffffffffffffffffffffffffffffffffffffffff1673ffffffffffffffffffffffffffffffffffffffff168152602001908152602001600020600082825401925050819055505b5b505600a165627a7a72305820fd5e8e8a64cfb4549867a93e2c7bdee112605fbc9db7e4cfdf287e077c939c6b0029',
+     gas: '4700000'
+   }, function (e, contract){
+    console.log(e, contract);
+    if (typeof contract.address !== 'undefined') {
+         console.log('Contract mined! address: ' + contract.address + ' transactionHash: ' + contract.transactionHash);
+    }
+ })
+
+ ABI (Interface):
+
+ [{"constant":false,"inputs":[{"name":"rate","type":"uint256"}],"name":"setRate","outputs":[],"payable":false,"type":"function"},{"constant":true,"inputs":[],"name":"kWh_rate","outputs":[{"name":"","type":"uint256"}],"payable":false,"type":"function"},{"constant":false,"inputs":[{"name":"kwh","type":"uint256"}],"name":"sellEnergy","outputs":[],"payable":false,"type":"function"},{"constant":false,"inputs":[],"name":"getEnergyAccount","outputs":[{"name":"kwh","type":"uint256"}],"payable":false,"type":"function"},{"constant":false,"inputs":[],"name":"getCoinAccount","outputs":[{"name":"coin","type":"uint256"}],"payable":false,"type":"function"},{"constant":true,"inputs":[],"name":"owner","outputs":[{"name":"","type":"address"}],"payable":false,"type":"function"},{"constant":false,"inputs":[{"name":"coin","type":"uint256"}],"name":"buyEnergy","outputs":[],"payable":false,"type":"function"},{"inputs":[],"payable":false,"type":"constructor"}]
+
+9. Compile Using Remix and copy the text boxes under web3 deploy and interface as shown above
+
+10. With a coinbase account having sufficient funds, copy and deploy the web3 compiled contract in the javascript console
+
+11 Start miner again, so that contract will get mined
+
+  miner.start(2)
+  wait 2 minutes..
+  miner.stop()
+
+12. JS console should display the following message
+
+Contract mined!
+address: '...'
+transactionHash: '...'
+
+13. Unlock the coinbase account again as it will periodically get locked (Step 3)
+
+14. Create a default account to use for contract execution
+
+web3.eth.defaultAccount = eth.accounts[0]
+
+15. Start miner
+
+  miner.start(2)
+
+16. Declare an ABI variable and equate it to the API object from remix
+
+  var abi = [...]
+
+17. Declare an address variable which refers to the contract address which was output
+
+  var address = '...'
+
+18. Declare a contract object variable as follows
+
+var apollotrade = eth.contract(abi).at(address)
+
+19. The above contract allows to sell indefinite kwh of energy. 1 unit of energy sold gives 1000 coins.
+    1 unit of energy bought will cost 1000 coins
+
+    apollotrade.sellEnergy(10)
+    apollotrade.getCoinAccount.call()
+
+    Wait 30 seconds with the miner runneing. The getCoinAccount.call() will show the updated balance after selling energy
+
+20. Now buy energy
+
+    apollotrade.buyEnergy(1)
+    apollotrade.getEnergyAccount.call()

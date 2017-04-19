@@ -1,0 +1,138 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="utf-8">
+    <meta http-equiv="X-UA-Compatible" content="IE=edge">
+    <meta name="viewport" content="width=device-width, initial-scale=1">
+    <script src="bower_components/jquery/dist/jquery.min.js"></script>
+    <script src="bower_components/jquery-ui/jquery-ui.min.js"></script>
+    <script src="bower_components/bootstrap/dist/js/bootstrap.min.js"></script>
+    <script src="bower_components/web3/dist/web3.min.js"></script>
+    <script src="https://ajax.googleapis.com/ajax/libs/jquery/3.1.1/jquery.min.js"></script>
+    <title>Dashboard</title>
+
+    <!-- Bootstrap core CSS -->
+    <link href="bower_components/bootstrap/dist/css/bootstrap.min.css" rel="stylesheet">
+
+    <style>
+      body {
+        padding-left: 50px;
+        padding-right: 50px;
+      }
+    </style>
+
+  </head>
+  <script>
+
+$(document).ready(function(){
+  setBalances();
+  $("#buyButton").click(function(){
+    var buyText = $("#buyText").val();
+    $.post("http://localhost:3000/buy",{buyText: buyText}, function(data){
+
+    });
+  });
+  $("#sellButton").click(function(){
+    var sellText = $("#sellText").val();
+    $.post("http://localhost:3000/sell",{sellText: sellText}, function(data){
+
+    });
+  });
+  $("#refresh").click(function(){
+    setBalances();
+  });
+  setInterval(function() {
+    $.ajax( {
+      type:'Get',
+      url:'http://localhost:3000/transactions',
+      success:function(data) {
+        console.log(data);
+       $("#transactions").append(data);
+      }
+    })
+  }, 5000);
+});
+function setBalances(){
+  $.ajax( {
+    type:'Get',
+    url:'http://localhost:3000/getCoinBalance',
+    success:function(data) {
+     $("#label3").text(data);
+    }
+  })
+  $.ajax( {
+    type:'Get',
+    url:'http://localhost:3000/getEnergyBalance',
+    success:function(data) {
+     $("#label4").text(data);
+    }
+  })
+}
+</script>
+  <body>
+    <div class="container-fluid">
+
+      <div class="row">
+        <div>
+          <h1 class="page-header">Ethereum Smart Contract Demo</h1>
+            <div class="panel panel-default">
+              <div class="panel-body">
+                <div class="row placeholders">
+                  <div class="col-xs-6 col-sm-3 placeholder">
+                    <h4>Coin Balance</h4>
+                    <span class="text-muted" id="label3"></span>
+                  </div>
+                  <div class="col-xs-6 col-sm-3 placeholder">
+                    <h4>Energy Balance</h4>
+                    <span class="text-muted" id="label4"></span>
+                  </div>
+                  <center><button class="btn btn-primary" id="refresh">Refresh</button></center>
+                </div>
+              </div>
+            </div>
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <h2 class="sub-header">Operations</h2>
+            <form class="form-inline" role="form"><center>
+              <div class="form-group">
+                <label for="sell">Sell energy:</label>
+                <input type="number" class="form-control" id="sellText">
+              </div>
+              <button class="btn btn-primary" id="sellButton">Sell</button>
+            </form><br><br>
+            <form class="form-inline" role="form">
+              <div class="form-group">
+                <label for="buy">Buy energy:</label>
+                <input type="number" class="form-control" id="buyText">
+              </div>
+              <button class="btn btn-primary" id="buyButton">Buy</button>
+            </center></form>
+        </div>
+      </div>
+
+      <div class="row">
+        <div>
+          <h2 class="sub-header">Transactions</h2>
+          <div class="table-responsive">
+            <table class="table table-striped">
+              <thead>
+                <tr>
+                  <th>block#</th>
+                  <th>from</th>
+                  <th>to</th>
+                  <th>input</th>
+                </tr>
+              </thead>
+              <tbody id="transactions">
+              </tbody>
+            </table>
+          </div>
+        </div>
+      </div>
+    </div>
+
+  </body>
+</html>
